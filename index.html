@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Семейное древо</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Верхняя панель управления -->
+  <header class="app-header">
+    <div class="logo-group">
+      <h1>Семейное древо</h1>
+      <span id="memberCount" class="badge">0 персон</span>
+    </div>
+
+    <div class="controls-group">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Поиск по имени или фамилии...">
+        <div id="searchResults" class="search-dropdown hidden"></div>
+      </div>
+
+      <div class="zoom-controls">
+        <button id="zoomInBtn" title="Приблизить">+</button>
+        <button id="zoomResetBtn" title="Сбросить масштаб">100%</button>
+        <button id="zoomOutBtn" title="Отдалить">−</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Интерактивная область просмотра -->
+  <main id="viewport" class="viewport">
+    <div id="treeContainer" class="tree-container">
+      <svg id="connectionsSvg" class="connections-svg"></svg>
+      <div id="nodesContainer" class="nodes-container"></div>
+    </div>
+  </main>
+
+  <!-- Боковая панель с детальной информацией -->
+  <aside id="detailsSidebar" class="sidebar hidden">
+    <button id="closeSidebarBtn" class="close-btn" aria-label="Закрыть">&times;</button>
+    <div class="sidebar-content">
+      <div class="sidebar-photo-container">
+        <img id="detailPhoto" src="" alt="Фото персоны" class="sidebar-photo">
+      </div>
+      <h2 id="detailName"></h2>
+      <p id="detailYears" class="sidebar-years"></p>
+      
+      <div class="sidebar-meta">
+        <div class="meta-item" id="detailLocationRow">
+          <strong>Место:</strong> <span id="detailLocation"></span>
+        </div>
+        <div class="meta-item" id="detailOccupationRow">
+          <strong>Профессия:</strong> <span id="detailOccupation"></span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Родственные связи</h3>
+        <div id="detailRelations" class="relations-list"></div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Биография</h3>
+        <p id="detailBio" class="bio-text"></p>
+      </div>
+    </div>
+  </aside>
+
+  <script src="app.js"></script>
+</body>
+</html>

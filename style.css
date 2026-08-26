@@ -1,0 +1,352 @@
+:root {
+  --bg-color: #f8fafc;
+  --panel-bg: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --male-color: #0284c7;
+  --female-color: #db2777;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Шапка */
+.app-header {
+  height: 64px;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 10;
+  box-shadow: var(--shadow);
+}
+
+.logo-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-group h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.badge {
+  background: #f1f5f9;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.controls-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.search-box {
+  position: relative;
+  width: 260px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-box input:focus {
+  border-color: var(--primary);
+}
+
+.search-dropdown {
+  position: absolute;
+  top: 105%;
+  left: 0;
+  right: 0;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  z-index: 20;
+}
+
+.search-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.search-item:hover {
+  background: #f8fafc;
+}
+
+.zoom-controls {
+  display: flex;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.zoom-controls button {
+  background: var(--panel-bg);
+  border: none;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: var(--text-main);
+  border-right: 1px solid var(--border-color);
+}
+
+.zoom-controls button:last-child {
+  border-right: none;
+}
+
+.zoom-controls button:hover {
+  background: #f1f5f9;
+}
+
+/* Холст древа */
+.viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+}
+
+.viewport.grabbing {
+  cursor: grabbing;
+}
+
+.tree-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.connections-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.tree-line {
+  fill: none;
+  stroke: #cbd5e1;
+  stroke-width: 2px;
+}
+
+.tree-line-spouse {
+  fill: none;
+  stroke: #f43f5e;
+  stroke-dasharray: 4 4;
+  stroke-width: 2px;
+}
+
+.nodes-container {
+  position: relative;
+}
+
+/* Карточка персоны */
+.person-card {
+  position: absolute;
+  width: 200px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.person-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
+}
+
+.person-card.male {
+  border-top: 4px solid var(--male-color);
+}
+
+.person-card.female {
+  border-top: 4px solid var(--female-color);
+}
+
+.person-card.highlighted {
+  outline: 3px solid #facc15;
+}
+
+.card-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e2e8f0;
+  margin-bottom: 8px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.card-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  margin-bottom: 4px;
+}
+
+.card-years {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Боковая панель */
+.sidebar {
+  position: fixed;
+  top: 64px;
+  right: 0;
+  width: 360px;
+  height: calc(100vh - 64px);
+  background: var(--panel-bg);
+  border-left: 1px solid var(--border-color);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+  overflow-y: auto;
+  z-index: 15;
+  transition: transform 0.3s ease-in-out;
+}
+
+.sidebar.hidden {
+  transform: translateX(100%);
+}
+
+.close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.sidebar-photo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.sidebar-photo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--border-color);
+}
+
+.sidebar-years {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+}
+
+.sidebar-content h2 {
+  text-align: center;
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+}
+
+.sidebar-section {
+  margin-top: 20px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 12px;
+}
+
+.sidebar-section h3 {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sidebar-meta .meta-item {
+  font-size: 0.875rem;
+  margin-bottom: 6px;
+}
+
+.bio-text {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #334155;
+  white-space: pre-line;
+}
+
+.relations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.relation-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: #f8fafc;
+  border-radius: 6px;
+  font-size: 0.825rem;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+}
+
+.relation-chip:hover {
+  background: #f1f5f9;
+  border-color: var(--primary);
+}
+
+.hidden {
+  display: none;
+}
