@@ -3,74 +3,548 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Семейное древо</title>
+  <title>Панель управления — Семейное древо</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --danger: #ef4444;
+      --success: #10b981;
+      --success-hover: #059669;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; }
+    .container { max-width: 1050px; margin: 0 auto; }
+    
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    h1 { font-size: 1.5rem; font-weight: 700; }
+    .header-links { display: flex; gap: 12px; align-items: center; }
+    .link-btn { color: var(--primary); text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+    .link-btn:hover { text-decoration: underline; }
+    
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .btn { background: var(--primary); color: #fff; border: none; padding: 9px 18px; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-success { background: var(--success); }
+    .btn-success:hover { background: var(--success-hover); }
+    .btn-danger { background: var(--danger); }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover { background: #f1f5f9; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    
+    /* Формы */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: span 2; }
+    label { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+    input, select, textarea { padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; outline: none; transition: border 0.2s; }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+    
+    /* Список персон */
+    .person-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .person-table th, .person-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    .person-table th { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .table-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 10px; background: #e2e8f0; }
+    .actions-cell { display: flex; gap: 8px; }
+    
+    /* Модальное окно */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+    .modal.hidden { display: none; }
+    .modal-content { background: var(--panel); width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; border-radius: 12px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+    
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; }
+    .status-ok { background: #dcfce7; color: #15803d; }
+    .status-err { background: #fee2e2; color: #b91c1c; }
+    
+    .photo-preview-wrap { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+    .photo-preview-img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
+    .hidden { display: none !important; }
+  </style>
 </head>
 <body>
 
-  <!-- Верхняя панель управления -->
-  <header class="app-header">
-    <div class="logo-group">
-      <h1>Семейное древо</h1>
-      <span id="memberCount" class="badge">0 персон</span>
+<div class="container">
+  <header>
+    <div>
+      <h1>Администрирование древа</h1>
+      <span id="connStatus" class="status-badge status-err">Не подключено</span>
     </div>
-
-    <div class="controls-group">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Поиск по имени или фамилии...">
-        <div id="searchResults" class="search-dropdown hidden"></div>
-      </div>
-
-      <div class="zoom-controls">
-        <button id="zoomInBtn" title="Приблизить">+</button>
-        <button id="zoomResetBtn" title="Сбросить масштаб">100%</button>
-        <button id="zoomOutBtn" title="Отдалить">−</button>
-      </div>
+    <div class="header-links">
+      <a href="index.html" class="link-btn" target="_blank">&larr; Открыть древо</a>
+      <button id="logoutBtn" class="btn btn-outline hidden">Выйти</button>
     </div>
   </header>
 
-  <!-- Интерактивная область просмотра -->
-  <main id="viewport" class="viewport">
-    <div id="treeContainer" class="tree-container">
-      <svg id="connectionsSvg" class="connections-svg"></svg>
-      <div id="nodesContainer" class="nodes-container"></div>
-    </div>
-  </main>
-
-  <!-- Боковая панель с детальной информацией -->
-  <aside id="detailsSidebar" class="sidebar hidden">
-    <button id="closeSidebarBtn" class="close-btn" aria-label="Закрыть">&times;</button>
-    <div class="sidebar-content">
-      <div class="sidebar-photo-container">
-        <img id="detailPhoto" src="" alt="Фото персоны" class="sidebar-photo">
+  <!-- Блок авторизации -->
+  <div id="authCard" class="card">
+    <h2>Подключение к GitHub</h2>
+    <p style="color: var(--muted); font-size: 0.9rem; margin: 6px 0 16px 0;">Введите данные вашего репозитория и персональный токен (Fine-grained Token).</p>
+    <form id="authForm" class="form-grid">
+      <div class="form-group">
+        <label>Логин GitHub (Owner):</label>
+        <input type="text" id="cfgOwner" required placeholder="например: alex-akhmetov">
       </div>
-      <h2 id="detailName"></h2>
-      <p id="detailYears" class="sidebar-years"></p>
+      <div class="form-group">
+        <label>Название репозитория (Repo):</label>
+        <input type="text" id="cfgRepo" required placeholder="например: my-family-tree">
+      </div>
+      <div class="form-group">
+        <label>Ветка (Branch):</label>
+        <input type="text" id="cfgBranch" value="main" required>
+      </div>
+      <div class="form-group">
+        <label>Personal Access Token:</label>
+        <input type="password" id="cfgToken" required placeholder="github_pat_...">
+      </div>
+      <div class="form-group full">
+        <button type="submit" class="btn" style="width: 100%; justify-content: center; padding: 12px;">Подключиться и загрузить данные</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Основная панель -->
+  <div id="appPanel" class="hidden">
+    <div class="card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h3 id="repoTitle">Репозиторий</h3>
+        <p style="color: var(--muted); font-size: 0.85rem;" id="personsCounter">0 персон в древе</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button id="addPersonBtn" class="btn">+ Добавить персону</button>
+        <button id="pushBtn" class="btn btn-success">Опубликовать на GitHub</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+        <h3>Список родственников</h3>
+        <input type="text" id="searchTable" placeholder="Поиск по имени или фамилии..." style="width: 280px;">
+      </div>
+      <div style="overflow-x: auto;">
+        <table class="person-table">
+          <thead>
+            <tr>
+              <th>Персона</th>
+              <th>Поколение</th>
+              <th>Годы жизни</th>
+              <th>Родители</th>
+              <th>Супруг(а)</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody id="personTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно редактирования -->
+<div id="editModal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modalTitle">Редактирование персоны</h2>
+      <button id="closeModalBtn" style="background:none;border:none;font-size:1.6rem;cursor:pointer;color:var(--muted);">&times;</button>
+    </div>
+    <form id="personForm">
+      <input type="hidden" id="fieldId">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>ФИО *</label>
+          <input type="text" id="fieldName" required placeholder="Иванов Иван Иванович">
+        </div>
+        <div class="form-group">
+          <label>Пол</label>
+          <select id="fieldGender">
+            <option value="male">Мужской</option>
+            <option value="female">Женский</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Поколение (1 = старшие предки, 2 = дети, 3 = внуки)</label>
+          <input type="number" id="fieldGeneration" value="1" min="1">
+        </div>
+        <div class="form-group">
+          <label>Год или дата рождения</label>
+          <input type="text" id="fieldBirth" placeholder="например: 1965">
+        </div>
+        <div class="form-group">
+          <label>Год или дата смерти (оставьте пустым, если жив)</label>
+          <input type="text" id="fieldDeath" placeholder="например: 2010">
+        </div>
+        <div class="form-group">
+          <label>Место проживания / рождения</label>
+          <input type="text" id="fieldLocation" placeholder="г. Москва">
+        </div>
+        <div class="form-group">
+          <label>Профессия / Род деятельности</label>
+          <input type="text" id="fieldOccupation" placeholder="Инженер-конструктор">
+        </div>
+        
+        <div class="form-group full">
+          <label>Фотография персоны</label>
+          <input type="file" id="photoFileInput" accept="image/*">
+          <input type="text" id="fieldPhoto" placeholder="Путь к фото (например: photos/photo_123.jpg)" style="margin-top: 6px;">
+          <div class="photo-preview-wrap">
+            <img id="photoPreview" class="photo-preview-img" src="" alt="Превью" onerror="this.src=DEFAULT_AVATAR">
+            <small style="color: var(--muted)">При выборе файла с диска он автоматически загрузится в папку photos/ на GitHub</small>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Родители (зажмите Ctrl/Cmd для выбора двух)</label>
+          <select id="fieldParents" multiple style="height: 100px;"></select>
+        </div>
+        <div class="form-group">
+          <label>Супруг(а)</label>
+          <select id="fieldSpouses" multiple style="height: 100px;"></select>
+        </div>
+        <div class="form-group full">
+          <label>Биография / Заметки</label>
+          <textarea id="fieldBio" rows="3" placeholder="Краткие сведения, воспоминания, награды..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="cancelModalBtn" class="btn btn-outline">Отмена</button>
+        <button type="submit" class="btn">Сохранить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23e2e8f0'/><text x='50%' y='55%' font-size='40' text-anchor='middle' dominant-baseline='middle' fill='%2364748b'>👤</text></svg>";
+
+function utf8ToBase64(str) {
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p) => String.fromCharCode('0x' + p)));
+}
+function base64ToUtf8(str) {
+  return decodeURIComponent(Array.prototype.map.call(atob(str), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+}
+
+let config = JSON.parse(localStorage.getItem('ft_gh_config') || 'null');
+let familyData = [];
+let fileSha = null;
+let newPhotoFiles = new Map(); // path -> base64DataString
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (config) {
+    applyAuth();
+    fetchTreeData();
+  }
+  setupEvents();
+});
+
+function applyAuth() {
+  document.getElementById('authCard').classList.add('hidden');
+  document.getElementById('appPanel').classList.remove('hidden');
+  document.getElementById('logoutBtn').classList.remove('hidden');
+  document.getElementById('repoTitle').textContent = `${config.owner}/${config.repo} (${config.branch})`;
+  const badge = document.getElementById('connStatus');
+  badge.textContent = 'Подключено';
+  badge.className = 'status-badge status-ok';
+}
+
+function setupEvents() {
+  document.getElementById('authForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    config = {
+      owner: document.getElementById('cfgOwner').value.trim(),
+      repo: document.getElementById('cfgRepo').value.trim(),
+      branch: document.getElementById('cfgBranch').value.trim() || 'main',
+      token: document.getElementById('cfgToken').value.trim()
+    };
+    localStorage.setItem('ft_gh_config', JSON.stringify(config));
+    applyAuth();
+    fetchTreeData();
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    localStorage.removeItem('ft_gh_config');
+    location.reload();
+  });
+
+  document.getElementById('addPersonBtn').addEventListener('click', () => openEditModal());
+  document.getElementById('closeModalBtn').addEventListener('click', () => closeModal());
+  document.getElementById('cancelModalBtn').addEventListener('click', () => closeModal());
+
+  document.getElementById('personForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    savePersonForm();
+  });
+
+  // Выбор фото с локального диска
+  document.getElementById('photoFileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const cleanFileName = `photo_${Date.now()}.${ext}`;
+      const path = `photos/${cleanFileName}`;
       
-      <div class="sidebar-meta">
-        <div class="meta-item" id="detailLocationRow">
-          <strong>Место:</strong> <span id="detailLocation"></span>
-        </div>
-        <div class="meta-item" id="detailOccupationRow">
-          <strong>Профессия:</strong> <span id="detailOccupation"></span>
-        </div>
-      </div>
+      document.getElementById('fieldPhoto').value = path;
+      document.getElementById('photoPreview').src = reader.result;
+      
+      // Извлекаем чистую Base64-строку
+      const base64Data = reader.result.split(',');
+      newPhotoFiles.set(path, base64Data);
+    };
+    reader.readAsDataURL(file);
+  });
 
-      <div class="sidebar-section">
-        <h3>Родственные связи</h3>
-        <div id="detailRelations" class="relations-list"></div>
-      </div>
+  // Ручной ввод пути к фото
+  document.getElementById('fieldPhoto').addEventListener('input', (e) => {
+    document.getElementById('photoPreview').src = e.target.value || DEFAULT_AVATAR;
+  });
 
-      <div class="sidebar-section">
-        <h3>Биография</h3>
-        <p id="detailBio" class="bio-text"></p>
-      </div>
-    </div>
-  </aside>
+  document.getElementById('pushBtn').addEventListener('click', () => pushToGitHub());
 
-  <script src="app.js"></script>
+  document.getElementById('searchTable').addEventListener('input', (e) => {
+    renderTable(e.target.value.trim().toLowerCase());
+  });
+}
+
+// Загрузка актуальных данных из репозитория
+async function fetchTreeData() {
+  const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/data.json?ref=${config.branch}&_t=${Date.now()}`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${config.token}`,
+        'Accept': 'application/vnd.github+json'
+      }
+    });
+    if (!res.ok) throw new Error('Не удалось загрузить data.json. Проверьте права токена (Contents: Read and write) и имя репозитория.');
+    const json = await res.json();
+    fileSha = json.sha;
+    familyData = JSON.parse(base64ToUtf8(json.content));
+    renderTable();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+function renderTable(filterQuery = '') {
+  const tbody = document.getElementById('personTableBody');
+  tbody.innerHTML = '';
+  document.getElementById('personsCounter').textContent = `${familyData.length} персон в древе`;
+
+  const map = new Map(familyData.map(p => [p.id, p]));
+  const filtered = familyData.filter(p => !filterQuery || p.name.toLowerCase().includes(filterQuery));
+
+  filtered.forEach(p => {
+    const tr = document.createElement('tr');
+    const years = (p.birth || '') + (p.death ? ` — ${p.death}` : '');
+    const parents = (p.parents || []).map(id => map.get(id)?.name || id).join(', ') || '—';
+    const spouses = (p.spouses || []).map(id => map.get(id)?.name || id).join(', ') || '—';
+    const photoSrc = p.photo || DEFAULT_AVATAR;
+
+    tr.innerHTML = `
+      <td>
+        <img src="${photoSrc}" class="table-avatar" onerror="this.onerror=null; this.src='${DEFAULT_AVATAR}';">
+        <strong>${p.name}</strong>
+      </td>
+      <td>${p.generation || 1}</td>
+      <td>${years || '—'}</td>
+      <td><small>${parents}</small></td>
+      <td><small>${spouses}</small></td>
+      <td class="actions-cell">
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:0.8rem;" onclick="editPerson('${p.id}')">Редактировать</button>
+        <button class="btn btn-danger" style="padding:5px 10px;font-size:0.8rem;" onclick="deletePerson('${p.id}')">Удалить</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function openEditModal(person = null) {
+  const modal = document.getElementById('editModal');
+  document.getElementById('modalTitle').textContent = person ? 'Редактировать персону' : 'Добавить персону';
+  
+  document.getElementById('fieldId').value = person ? person.id : `p_${Date.now()}`;
+  document.getElementById('fieldName').value = person ? person.name : '';
+  document.getElementById('fieldGender').value = person ? (person.gender || 'male') : 'male';
+  document.getElementById('fieldGeneration').value = person ? (person.generation || 1) : 1;
+  document.getElementById('fieldBirth').value = person ? (person.birth || '') : '';
+  document.getElementById('fieldDeath').value = person ? (person.death || '') : '';
+  document.getElementById('fieldLocation').value = person ? (person.location || '') : '';
+  document.getElementById('fieldOccupation').value = person ? (person.occupation || '') : '';
+  document.getElementById('fieldPhoto').value = person ? (person.photo || '') : '';
+  document.getElementById('fieldBio').value = person ? (person.bio || '') : '';
+  
+  document.getElementById('photoFileInput').value = '';
+  document.getElementById('photoPreview').src = (person && person.photo) ? person.photo : DEFAULT_AVATAR;
+
+  const parentsSel = document.getElementById('fieldParents');
+  const spousesSel = document.getElementById('fieldSpouses');
+  parentsSel.innerHTML = '';
+  spousesSel.innerHTML = '';
+
+  familyData.forEach(p => {
+    if (person && p.id === person.id) return;
+    const optP = new Option(p.name, p.id, false, person && person.parents && person.parents.includes(p.id));
+    const optS = new Option(p.name, p.id, false, person && person.spouses && person.spouses.includes(p.id));
+    parentsSel.add(optP);
+    spousesSel.add(optS);
+  });
+
+  modal.classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('editModal').classList.add('hidden');
+}
+
+function editPerson(id) {
+  const p = familyData.find(x => x.id === id);
+  if (p) openEditModal(p);
+}
+
+function deletePerson(id) {
+  if (!confirm('Удалить эту персону? Связи с ней также будут удалены.')) return;
+  familyData = familyData.filter(p => p.id !== id);
+  familyData.forEach(p => {
+    if (p.parents) p.parents = p.parents.filter(x => x !== id);
+    if (p.spouses) p.spouses = p.spouses.filter(x => x !== id);
+    if (p.children) p.children = p.children.filter(x => x !== id);
+  });
+  renderTable();
+}
+
+function savePersonForm() {
+  const id = document.getElementById('fieldId').value;
+  const name = document.getElementById('fieldName').value.trim();
+  const gender = document.getElementById('fieldGender').value;
+  const generation = parseInt(document.getElementById('fieldGeneration').value, 10) || 1;
+  const birth = document.getElementById('fieldBirth').value.trim();
+  const death = document.getElementById('fieldDeath').value.trim();
+  const locationVal = document.getElementById('fieldLocation').value.trim();
+  const occupation = document.getElementById('fieldOccupation').value.trim();
+  const photo = document.getElementById('fieldPhoto').value.trim();
+  const bio = document.getElementById('fieldBio').value.trim();
+
+  const parents = Array.from(document.getElementById('fieldParents').selectedOptions).map(o => o.value);
+  const spouses = Array.from(document.getElementById('fieldSpouses').selectedOptions).map(o => o.value);
+
+  let existing = familyData.find(p => p.id === id);
+  if (existing) {
+    Object.assign(existing, { name, gender, generation, birth, death, location: locationVal, occupation, photo, bio, parents, spouses });
+  } else {
+    familyData.push({ id, name, gender, generation, birth, death, location: locationVal, occupation, photo, bio, parents, spouses, children: [] });
+  }
+
+  // Синхронизация связей
+  familyData.forEach(p => {
+    if (parents.includes(p.id) && (!p.children || !p.children.includes(id))) {
+      p.children = p.children || [];
+      p.children.push(id);
+    }
+    if (spouses.includes(p.id) && (!p.spouses || !p.spouses.includes(id))) {
+      p.spouses = p.spouses || [];
+      p.spouses.push(id);
+    }
+  });
+
+  closeModal();
+  renderTable();
+}
+
+// Публикация изменений и фото в GitHub
+async function pushToGitHub() {
+  const pushBtn = document.getElementById('pushBtn');
+  pushBtn.disabled = true;
+  pushBtn.textContent = 'Сохранение...';
+
+  try {
+    // 1. Отправка загруженных фото
+    for (let [path, base64Data] of newPhotoFiles.entries()) {
+      let existingSha = null;
+      try {
+        const checkRes = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}?ref=${config.branch}`, {
+          headers: { 'Authorization': `Bearer ${config.token}` }
+        });
+        if (checkRes.ok) {
+          const checkJson = await checkRes.json();
+          existingSha = checkJson.sha;
+        }
+      } catch (_) {}
+
+      const photoRes = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${config.token}`,
+          'Accept': 'application/vnd.github+json'
+        },
+        body: JSON.stringify({
+          message: `Upload photo ${path}`,
+          content: base64Data,
+          sha: existingSha || undefined,
+          branch: config.branch
+        })
+      });
+
+      if (!photoRes.ok) {
+        const errData = await photoRes.json().catch(() => ({}));
+        throw new Error(`Ошибка загрузки фото ${path}: ${errData.message || photoRes.statusText}`);
+      }
+    }
+    newPhotoFiles.clear();
+
+    // 2. Получение актуального sha файла data.json перед записью
+    try {
+      const getFile = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/data.json?ref=${config.branch}&_t=${Date.now()}`, {
+        headers: { 'Authorization': `Bearer ${config.token}` }
+      });
+      if (getFile.ok) {
+        const fileInfo = await getFile.json();
+        fileSha = fileInfo.sha;
+      }
+    } catch (_) {}
+
+    // 3. Отправка обновленного data.json
+    const jsonStr = JSON.stringify(familyData, null, 2);
+    const res = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/data.json`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${config.token}`,
+        'Accept': 'application/vnd.github+json'
+      },
+      body: JSON.stringify({
+        message: 'Update family tree data via admin panel',
+        content: utf8ToBase64(jsonStr),
+        sha: fileSha,
+        branch: config.branch
+      })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(`Ошибка сохранения data.json: ${errData.message || res.statusText}`);
+    }
+    
+    const resData = await res.json();
+    fileSha = resData.content.sha;
+
+    alert('Изменения и фотографии успешно сохранены на GitHub! Сайт обновится через 1–2 минуты.');
+  } catch (err) {
+    alert('Ошибка при сохранении: ' + err.message);
+  } finally {
+    pushBtn.disabled = false;
+    pushBtn.textContent = 'Опубликовать на GitHub';
+  }
+}
+</script>
 </body>
 </html>
