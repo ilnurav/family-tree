@@ -9,37 +9,41 @@ const CARD_HEIGHT = 140;
 const HORIZONTAL_GAP = 60;
 const VERTICAL_GAP = 120;
 
-// Автономная SVG-заглушка для аватаров (не требует интернета и не вызывает ошибок)
 const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23e2e8f0'/><text x='50%' y='55%' font-size='40' text-anchor='middle' dominant-baseline='middle' fill='%2364748b'>👤</text></svg>";
 
-// Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
   initEventListeners();
   loadTreeData();
 });
 
-// Универсальная загрузка данных (поддерживает и data.js при двойном клике, и data.json на GitHub)
+// Загрузка всегда запрашивает свежую версию без кэша
 async function loadTreeData() {
   try {
+    // Добавляем временную метку для обхода кэша браузера
+    const res = await fetch(`data.json?_t=${Date.now()}`, { cache: 'no-store' });
+    if (res.ok) {
+      familyData = await res.json();
+    } else if (typeof initialFamilyData !== 'undefined' && Array.isArray(initialFamilyData)) {
+      familyData = initialFamilyData;
+    }
+  } catch (err) {
     if (typeof initialFamilyData !== 'undefined' && Array.isArray(initialFamilyData)) {
       familyData = initialFamilyData;
     } else {
-      const res = await fetch('data.json');
-      familyData = await res.json();
+      console.error('Ошибка загрузки данных:', err);
     }
-    familyData.forEach(p => personMap.set(p.id, p));
-
-    const countEl = document.getElementById('memberCount');
-    if (countEl) countEl.textContent = `${familyData.length} персон`;
-
-    renderTree();
-    setupSearch();
-  } catch (err) {
-    console.error('Ошибка загрузки данных древа:', err);
   }
+
+  personMap.clear();
+  familyData.forEach(p => personMap.set(p.id, p));
+
+  const countEl = document.getElementById('memberCount');
+  if (countEl) countEl.textContent = `${familyData.length} персон`;
+
+  renderTree();
+  setupSearch();
 }
 
-// Отрисовка древа
 function renderTree() {
   const nodesContainer = document.getElementById('nodesContainer');
   const svg = document.getElementById('connectionsSvg');
@@ -48,7 +52,6 @@ function renderTree() {
   nodesContainer.innerHTML = '';
   svg.innerHTML = '';
 
-  // Группировка по поколениям
   const generations = {};
   familyData.forEach(p => {
     const gen = p.generation || 1;
@@ -71,7 +74,6 @@ function renderTree() {
     });
   });
 
-  // Установка размеров рабочего пространства
   const totalHeight = genKeys.length * (CARD_HEIGHT + VERTICAL_GAP) + 200;
   const container = document.getElementById('treeContainer');
   if (container) {
@@ -79,10 +81,8 @@ function renderTree() {
     container.style.height = `${totalHeight}px`;
   }
 
-  // Отрисовка линий связей
   renderConnections(positions, svg);
 
-  // Отрисовка карточек персон
   familyData.forEach(p => {
     const pos = positions.get(p.id);
     if (pos) {
@@ -94,7 +94,6 @@ function renderTree() {
   applyTransform();
 }
 
-// Создание карточки персоны
 function createPersonCard(person, pos) {
   const card = document.createElement('div');
   card.className = `person-card ${person.gender || 'male'}`;
@@ -105,7 +104,6 @@ function createPersonCard(person, pos) {
   const years = (person.birth || '') + (person.death ? ` — ${person.death}` : (person.birth ? ' — н.в.' : ''));
   const photoSrc = person.photo || DEFAULT_AVATAR;
 
-  // Безопасная вставка изображения с защитой от бесконечного цикла
   card.innerHTML = `
     <img src="${photoSrc}" alt="${person.name}" class="card-avatar" onerror="this.onerror=null; this.src='${DEFAULT_AVATAR}';" draggable="false">
     <div class="card-name">${person.name}</div>
@@ -116,13 +114,11 @@ function createPersonCard(person, pos) {
   return card;
 }
 
-// Отрисовка линий между родственниками (SVG)
 function renderConnections(positions, svg) {
   familyData.forEach(person => {
     const pPos = positions.get(person.id);
     if (!pPos) return;
 
-    // Линии от родителей к детям
     if (person.children && person.children.length > 0) {
       const parentBottomX = pPos.x + CARD_WIDTH / 2;
       const parentBottomY = pPos.y + CARD_HEIGHT;
@@ -142,10 +138,9 @@ function renderConnections(positions, svg) {
       });
     }
 
-    // Линии между супругами
     if (person.spouses && person.spouses.length > 0) {
       person.spouses.forEach(sId => {
-        if (person.id > sId) return; // исключаем дублирование линии
+        if (person.id > sId) return;
         const sPos = positions.get(sId);
         if (!sPos) return;
 
@@ -161,7 +156,6 @@ function renderConnections(positions, svg) {
   });
 }
 
-// Открытие боковой панели с биографией
 function openSidebar(person) {
   const sidebar = document.getElementById('detailsSidebar');
   if (!sidebar) return;
@@ -190,7 +184,6 @@ function openSidebar(person) {
 
   document.getElementById('detailBio').textContent = person.bio || 'Информация не указана.';
 
-  // Список родственных связей
   const relContainer = document.getElementById('detailRelations');
   if (relContainer) {
     relContainer.innerHTML = '';
@@ -219,7 +212,6 @@ function openSidebar(person) {
   sidebar.classList.remove('hidden');
 }
 
-// Фокусировка камеры на выбранной персоне
 function focusCard(id) {
   document.querySelectorAll('.person-card').forEach(c => c.classList.remove('highlighted'));
   const card = document.getElementById(`card-${id}`);
@@ -236,12 +228,10 @@ function focusCard(id) {
   }
 }
 
-// Управление панорамированием, масштабированием и мышью
 function initEventListeners() {
   const vp = document.getElementById('viewport');
   if (!vp) return;
 
-  // Начало перетаскивания
   vp.addEventListener('mousedown', (e) => {
     if (e.target.closest('.person-card')) return;
     isDragging = true;
@@ -249,7 +239,6 @@ function initEventListeners() {
     vp.classList.add('grabbing');
   });
 
-  // Перемещение мыши
   window.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
     currentTransform.x = e.clientX - startPan.x;
@@ -257,7 +246,6 @@ function initEventListeners() {
     applyTransform();
   });
 
-  // Завершение перетаскивания и защита от залипания
   window.addEventListener('mouseup', () => {
     isDragging = false;
     vp.classList.remove('grabbing');
@@ -268,7 +256,6 @@ function initEventListeners() {
     vp.classList.remove('grabbing');
   });
 
-  // Зум колесиком мыши
   vp.addEventListener('wheel', (e) => {
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
@@ -284,7 +271,6 @@ function initEventListeners() {
     applyTransform();
   }, { passive: false });
 
-  // Кнопки масштаба
   document.getElementById('zoomInBtn')?.addEventListener('click', () => {
     currentTransform.scale = Math.min(currentTransform.scale * 1.2, 2.5);
     applyTransform();
@@ -300,7 +286,6 @@ function initEventListeners() {
     applyTransform();
   });
 
-  // Закрытие боковой панели
   document.getElementById('closeSidebarBtn')?.addEventListener('click', () => {
     document.getElementById('detailsSidebar')?.classList.add('hidden');
   });
@@ -317,7 +302,6 @@ function applyTransform() {
   }
 }
 
-// Поиск
 function setupSearch() {
   const searchInput = document.getElementById('searchInput');
   const resultsBox = document.getElementById('searchResults');
