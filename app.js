@@ -9,30 +9,42 @@ const CARD_HEIGHT = 140;
 const HORIZONTAL_GAP = 60;
 const VERTICAL_GAP = 120;
 
-// Инициализация при загрузке
+// Автономная SVG-заглушка для аватаров (не требует интернета и не вызывает ошибок)
+const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23e2e8f0'/><text x='50%' y='55%' font-size='40' text-anchor='middle' dominant-baseline='middle' fill='%2364748b'>👤</text></svg>";
+
+// Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
   initEventListeners();
   loadTreeData();
 });
 
+// Универсальная загрузка данных (поддерживает и data.js при двойном клике, и data.json на GitHub)
 async function loadTreeData() {
   try {
-    const res = await fetch('data.json');
-    familyData = await res.json();
+    if (typeof initialFamilyData !== 'undefined' && Array.isArray(initialFamilyData)) {
+      familyData = initialFamilyData;
+    } else {
+      const res = await fetch('data.json');
+      familyData = await res.json();
+    }
     familyData.forEach(p => personMap.set(p.id, p));
 
-    document.getElementById('memberCount').textContent = `${familyData.length} персон`;
+    const countEl = document.getElementById('memberCount');
+    if (countEl) countEl.textContent = `${familyData.length} персон`;
+
     renderTree();
     setupSearch();
   } catch (err) {
-    console.error('Ошибка загрузки data.json:', err);
+    console.error('Ошибка загрузки данных древа:', err);
   }
 }
 
-// Расчет позиций и отрисовка
+// Отрисовка древа
 function renderTree() {
   const nodesContainer = document.getElementById('nodesContainer');
   const svg = document.getElementById('connectionsSvg');
+  if (!nodesContainer || !svg) return;
+
   nodesContainer.innerHTML = '';
   svg.innerHTML = '';
 
@@ -59,25 +71,30 @@ function renderTree() {
     });
   });
 
-  // Установка размеров контейнера
+  // Установка размеров рабочего пространства
   const totalHeight = genKeys.length * (CARD_HEIGHT + VERTICAL_GAP) + 200;
   const container = document.getElementById('treeContainer');
-  container.style.width = `${maxRowWidth + 400}px`;
-  container.style.height = `${totalHeight}px`;
+  if (container) {
+    container.style.width = `${maxRowWidth + 400}px`;
+    container.style.height = `${totalHeight}px`;
+  }
 
-  // Отрисовка связей (SVG)
+  // Отрисовка линий связей
   renderConnections(positions, svg);
 
   // Отрисовка карточек персон
   familyData.forEach(p => {
     const pos = positions.get(p.id);
-    const card = createPersonCard(p, pos);
-    nodesContainer.appendChild(card);
+    if (pos) {
+      const card = createPersonCard(p, pos);
+      nodesContainer.appendChild(card);
+    }
   });
 
   applyTransform();
 }
 
+// Создание карточки персоны
 function createPersonCard(person, pos) {
   const card = document.createElement('div');
   card.className = `person-card ${person.gender || 'male'}`;
@@ -86,10 +103,11 @@ function createPersonCard(person, pos) {
   card.style.top = `${pos.y}px`;
 
   const years = (person.birth || '') + (person.death ? ` — ${person.death}` : (person.birth ? ' — н.в.' : ''));
-  const avatarUrl = person.photo || 'https://via.placeholder.com/150';
+  const photoSrc = person.photo || DEFAULT_AVATAR;
 
+  // Безопасная вставка изображения с защитой от бесконечного цикла
   card.innerHTML = `
-    <img src="${avatarUrl}" alt="${person.name}" class="card-avatar" onerror="this.src='https://via.placeholder.com/150'">
+    <img src="${photoSrc}" alt="${person.name}" class="card-avatar" onerror="this.onerror=null; this.src='${DEFAULT_AVATAR}';" draggable="false">
     <div class="card-name">${person.name}</div>
     <div class="card-years">${years}</div>
   `;
@@ -98,13 +116,13 @@ function createPersonCard(person, pos) {
   return card;
 }
 
+// Отрисовка линий между родственниками (SVG)
 function renderConnections(positions, svg) {
-  // Линии супругов и детей
   familyData.forEach(person => {
     const pPos = positions.get(person.id);
     if (!pPos) return;
 
-    // Линии к детям от родителей
+    // Линии от родителей к детям
     if (person.children && person.children.length > 0) {
       const parentBottomX = pPos.x + CARD_WIDTH / 2;
       const parentBottomY = pPos.y + CARD_HEIGHT;
@@ -124,10 +142,10 @@ function renderConnections(positions, svg) {
       });
     }
 
-    // Линии супругов
+    // Линии между супругами
     if (person.spouses && person.spouses.length > 0) {
       person.spouses.forEach(sId => {
-        if (person.id > sId) return; // избежать повтора
+        if (person.id > sId) return; // исключаем дублирование линии
         const sPos = positions.get(sId);
         if (!sPos) return;
 
@@ -143,57 +161,65 @@ function renderConnections(positions, svg) {
   });
 }
 
-// Боковая панель
+// Открытие боковой панели с биографией
 function openSidebar(person) {
+  const sidebar = document.getElementById('detailsSidebar');
+  if (!sidebar) return;
+
   document.getElementById('detailName').textContent = person.name;
-  document.getElementById('detailPhoto').src = person.photo || 'https://via.placeholder.com/150';
+  
+  const photoEl = document.getElementById('detailPhoto');
+  if (photoEl) {
+    photoEl.onerror = function() { this.onerror = null; this.src = DEFAULT_AVATAR; };
+    photoEl.src = person.photo || DEFAULT_AVATAR;
+  }
+
   document.getElementById('detailYears').textContent = (person.birth || '') + (person.death ? ` — ${person.death}` : (person.birth ? ' — настоящее время' : ''));
   
   const locRow = document.getElementById('detailLocationRow');
-  if (person.location) {
-    locRow.style.display = 'block';
-    document.getElementById('detailLocation').textContent = person.location;
-  } else {
-    locRow.style.display = 'none';
+  if (locRow) {
+    locRow.style.display = person.location ? 'block' : 'none';
+    document.getElementById('detailLocation').textContent = person.location || '';
   }
 
   const occRow = document.getElementById('detailOccupationRow');
-  if (person.occupation) {
-    occRow.style.display = 'block';
-    document.getElementById('detailOccupation').textContent = person.occupation;
-  } else {
-    occRow.style.display = 'none';
+  if (occRow) {
+    occRow.style.display = person.occupation ? 'block' : 'none';
+    document.getElementById('detailOccupation').textContent = person.occupation || '';
   }
 
-  document.getElementById('detailBio').textContent = person.bio || 'Биография не заполнена.';
+  document.getElementById('detailBio').textContent = person.bio || 'Информация не указана.';
 
-  // Связи
+  // Список родственных связей
   const relContainer = document.getElementById('detailRelations');
-  relContainer.innerHTML = '';
+  if (relContainer) {
+    relContainer.innerHTML = '';
 
-  const addRelationGroup = (title, ids) => {
-    if (!ids || ids.length === 0) return;
-    ids.forEach(id => {
-      const rel = personMap.get(id);
-      if (!rel) return;
-      const chip = document.createElement('div');
-      chip.className = 'relation-chip';
-      chip.innerHTML = `<span>${rel.name}</span><small style="color:var(--text-muted)">${title}</small>`;
-      chip.addEventListener('click', () => {
-        openSidebar(rel);
-        focusCard(rel.id);
+    const addRelationGroup = (title, ids) => {
+      if (!ids || ids.length === 0) return;
+      ids.forEach(id => {
+        const rel = personMap.get(id);
+        if (!rel) return;
+        const chip = document.createElement('div');
+        chip.className = 'relation-chip';
+        chip.innerHTML = `<span>${rel.name}</span><small style="color:var(--text-muted)">${title}</small>`;
+        chip.addEventListener('click', () => {
+          openSidebar(rel);
+          focusCard(rel.id);
+        });
+        relContainer.appendChild(chip);
       });
-      relContainer.appendChild(chip);
-    });
-  };
+    };
 
-  addRelationGroup('Родитель', person.parents);
-  addRelationGroup('Супруг(а)', person.spouses);
-  addRelationGroup('Ребёнок', person.children);
+    addRelationGroup('Родитель', person.parents);
+    addRelationGroup('Супруг(а)', person.spouses);
+    addRelationGroup('Ребёнок', person.children);
+  }
 
-  document.getElementById('detailsSidebar').classList.remove('hidden');
+  sidebar.classList.remove('hidden');
 }
 
+// Фокусировка камеры на выбранной персоне
 function focusCard(id) {
   document.querySelectorAll('.person-card').forEach(c => c.classList.remove('highlighted'));
   const card = document.getElementById(`card-${id}`);
@@ -202,16 +228,20 @@ function focusCard(id) {
     const x = parseFloat(card.style.left);
     const y = parseFloat(card.style.top);
     const vp = document.getElementById('viewport');
-    currentTransform.x = vp.clientWidth / 2 - (x + CARD_WIDTH / 2) * currentTransform.scale;
-    currentTransform.y = vp.clientHeight / 2 - (y + CARD_HEIGHT / 2) * currentTransform.scale;
-    applyTransform();
+    if (vp) {
+      currentTransform.x = vp.clientWidth / 2 - (x + CARD_WIDTH / 2) * currentTransform.scale;
+      currentTransform.y = vp.clientHeight / 2 - (y + CARD_HEIGHT / 2) * currentTransform.scale;
+      applyTransform();
+    }
   }
 }
 
-// Управление масштабированием и перемещением
+// Управление панорамированием, масштабированием и мышью
 function initEventListeners() {
   const vp = document.getElementById('viewport');
+  if (!vp) return;
 
+  // Начало перетаскивания
   vp.addEventListener('mousedown', (e) => {
     if (e.target.closest('.person-card')) return;
     isDragging = true;
@@ -219,6 +249,7 @@ function initEventListeners() {
     vp.classList.add('grabbing');
   });
 
+  // Перемещение мыши
   window.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
     currentTransform.x = e.clientX - startPan.x;
@@ -226,11 +257,18 @@ function initEventListeners() {
     applyTransform();
   });
 
+  // Завершение перетаскивания и защита от залипания
   window.addEventListener('mouseup', () => {
     isDragging = false;
     vp.classList.remove('grabbing');
   });
 
+  window.addEventListener('mouseleave', () => {
+    isDragging = false;
+    vp.classList.remove('grabbing');
+  });
+
+  // Зум колесиком мыши
   vp.addEventListener('wheel', (e) => {
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
@@ -246,36 +284,44 @@ function initEventListeners() {
     applyTransform();
   }, { passive: false });
 
-  document.getElementById('zoomInBtn').addEventListener('click', () => {
+  // Кнопки масштаба
+  document.getElementById('zoomInBtn')?.addEventListener('click', () => {
     currentTransform.scale = Math.min(currentTransform.scale * 1.2, 2.5);
     applyTransform();
   });
 
-  document.getElementById('zoomOutBtn').addEventListener('click', () => {
+  document.getElementById('zoomOutBtn')?.addEventListener('click', () => {
     currentTransform.scale = Math.max(currentTransform.scale * 0.8, 0.3);
     applyTransform();
   });
 
-  document.getElementById('zoomResetBtn').addEventListener('click', () => {
+  document.getElementById('zoomResetBtn')?.addEventListener('click', () => {
     currentTransform = { x: 80, y: 80, scale: 1 };
     applyTransform();
   });
 
-  document.getElementById('closeSidebarBtn').addEventListener('click', () => {
-    document.getElementById('detailsSidebar').classList.add('hidden');
+  // Закрытие боковой панели
+  document.getElementById('closeSidebarBtn')?.addEventListener('click', () => {
+    document.getElementById('detailsSidebar')?.classList.add('hidden');
   });
 }
 
 function applyTransform() {
   const container = document.getElementById('treeContainer');
-  container.style.transform = `translate(${currentTransform.x}px, ${currentTransform.y}px) scale(${currentTransform.scale})`;
-  document.getElementById('zoomResetBtn').textContent = `${Math.round(currentTransform.scale * 100)}%`;
+  if (container) {
+    container.style.transform = `translate(${currentTransform.x}px, ${currentTransform.y}px) scale(${currentTransform.scale})`;
+  }
+  const resetBtn = document.getElementById('zoomResetBtn');
+  if (resetBtn) {
+    resetBtn.textContent = `${Math.round(currentTransform.scale * 100)}%`;
+  }
 }
 
 // Поиск
 function setupSearch() {
   const searchInput = document.getElementById('searchInput');
   const resultsBox = document.getElementById('searchResults');
+  if (!searchInput || !resultsBox) return;
 
   searchInput.addEventListener('input', (e) => {
     const q = e.target.value.trim().toLowerCase();
