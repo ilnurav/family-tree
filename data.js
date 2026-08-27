@@ -101,7 +101,7 @@ const initialFamilyData = [
   },
   {
     "id": "6",
-    "name": "Иванов Дмитрий Алексеевич",
+    "name": "Иванов 3 Дмитрий Алексеевич",
     "gender": "male",
     "generation": 3,
     "birth": "1995",
@@ -114,6 +114,7 @@ const initialFamilyData = [
       "3",
       "5"
     ],
-    "children": []
+    "children": [],
+    "spouses": []
   }
 ];
