@@ -1,0 +1,119 @@
+const initialFamilyData = [
+  {
+    "id": "1",
+    "name": "Иванов2 Пётр Алексеевич",
+    "gender": "male",
+    "generation": 1,
+    "birth": "1935",
+    "death": "2010",
+    "photo": "photos/photo_1787862420734.jpg",
+    "location": "г. Москва",
+    "occupation": "Инженер-конструктор",
+    "bio": "Родился в Москве. Окончил МГТУ им. Баумана, участвовал в проектировании промышленных объектов.",
+    "spouses": [
+      "3"
+    ],
+    "children": [
+      "3",
+      "4"
+    ],
+    "parents": [
+      "2"
+    ]
+  },
+  {
+    "id": "2",
+    "name": "Иванова (Смирнова) Мария Ильинична",
+    "gender": "female",
+    "generation": 1,
+    "birth": "1938",
+    "death": "2018",
+    "photo": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=60",
+    "location": "г. Москва",
+    "occupation": "Учитель математики",
+    "bio": "Преподавала в средней школе более 40 лет. Заслуженный учитель школы.",
+    "spouses": [
+      "1"
+    ],
+    "children": [
+      "3",
+      "4",
+      "1"
+    ]
+  },
+  {
+    "id": "3",
+    "name": "Иванов Алексей Петрович",
+    "gender": "male",
+    "generation": 2,
+    "birth": "1965",
+    "death": "",
+    "photo": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=60",
+    "location": "г. Санкт-Петербург",
+    "occupation": "Архитектор",
+    "bio": "Окончил архитектурный факультет. Проектирует жилые и общественные здания.",
+    "parents": [
+      "1",
+      "2"
+    ],
+    "spouses": [
+      "5",
+      "1"
+    ],
+    "children": [
+      "6"
+    ]
+  },
+  {
+    "id": "4",
+    "name": "Иванова Ольга Петровна",
+    "gender": "female",
+    "generation": 2,
+    "birth": "1972",
+    "death": "",
+    "photo": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=60",
+    "location": "г. Москва",
+    "occupation": "Врач-терапевт",
+    "bio": "Работает в городской клинической больнице.",
+    "parents": [
+      "1",
+      "2"
+    ],
+    "children": []
+  },
+  {
+    "id": "5",
+    "name": "Иванова (Кузнецова) Елена Дмитриевна",
+    "gender": "female",
+    "generation": 2,
+    "birth": "1968",
+    "death": "",
+    "photo": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=60",
+    "location": "г. Санкт-Петербург",
+    "occupation": "Художник-оформитель",
+    "bio": "Занимается книжной иллюстрацией и дизайном.",
+    "spouses": [
+      "3"
+    ],
+    "children": [
+      "6"
+    ]
+  },
+  {
+    "id": "6",
+    "name": "Иванов Дмитрий Алексеевич",
+    "gender": "male",
+    "generation": 3,
+    "birth": "1995",
+    "death": "",
+    "photo": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=60",
+    "location": "г. Санкт-Петербург",
+    "occupation": "IT-специалист",
+    "bio": "Программист, увлекается генеалогией и путешествиями.",
+    "parents": [
+      "3",
+      "5"
+    ],
+    "children": []
+  }
+];
